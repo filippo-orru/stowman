@@ -1,26 +1,29 @@
-# stowman.sh
+# stowman
 
 ```bash
    _==_ _
  _,(",)|_|
-  \/. \-|   stowman.sh
+  \/. \-|   stowman
 __( :  )|_  Manage your dotfiles easily.
 
 ```
 
 ## Installation
 
-Download .sh file
+Download the script as `stowman`:
+
 ```bash
 curl -L https://raw.githubusercontent.com/filippo-orru/stowman/refs/heads/main/stowman.sh > ~/.local/bin/stowman
 chmod +x ~/.local/bin/stowman
 ```
 
-Or clone the repo
+Or clone the repo:
+
 ```bash
-git clone https://github.com/ad-on-is/stowman ~/.local/tmp/stowman
-chmod +x ~/.local/tmp/stowman/stowman.sh
-ln -s ~/.local/tmp/stowman/stowman.sh ~/.local/bin/stowman.sh
+git clone https://github.com/ad-on-is/stowman
+cd stowman
+chmod +x ./stowman.sh
+ln -s "$PWD/stowman.sh" ~/.local/bin/stowman
 ```
 
 ## Usage
@@ -33,25 +36,25 @@ ln -s ~/.local/tmp/stowman/stowman.sh ~/.local/bin/stowman.sh
 ### On your current machine
 
 - Create a GitHub repository.
-- Run `stowman.sh init <repo>`
-- Add files or folders to stowman using `stowman.sh add <file/folder> <package>`
-- Push changes using `stowman.sh push`
+- Run `stowman init <repo>`
+- Add files or folders to stowman using `stowman add <file/folder> <package>`
+- Push changes using `stowman push`
 
 ### On another machine
 
-- Run `stowman.sh init <repo>`
-- Reload the configuration by using `stowman.sh reload <package|all>`
+- Run `stowman init <repo>`
+- Reload the configuration by using `stowman reload <package|all>`
 
 ### Adding files or folders
 
-- Run `stowman.sh add ~/.config/nvim editors` to add `~/.config/nvim` to the `editors` package.
-- Run `stowman.sh add . cli` to add the current directory to the `cli` package.
+- Run `stowman add ~/.config/nvim editors` to add `~/.config/nvim` to the `editors` package.
+- Run `stowman add . cli` to add the current directory to the `cli` package.
 
 ### Syncing changes
 
-- Run `stowman.sh push` to update the repository.
-- Run `stowman.sh pull` followed by `stowman.sh reload <package|all>` to pull and apply the latest changes.
+- Run `stowman push` to update the repository.
+- Run `stowman pull` followed by `stowman reload <package|all>` to pull and apply the latest changes.
 
 ### List stowed files and folders
 
-- Run `stowman.sh list` to list all stowed files and folders.
+- Run `stowman list` to list all stowed files and folders.

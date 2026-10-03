@@ -42,6 +42,80 @@ function pull() {
   eval "$gitcmd pull"
 }
 
+OVERWRITE_ALL=0
+CANCEL_RELOAD=0
+
+function overwrite_conflicts() {
+  local package="$1"
+  local package_dir="$DOTDIR/$package"
+  local source target rel existing found
+  local -a conflicts=()
+
+  while IFS= read -r -d '' source; do
+    rel="${source#"$package_dir"/}"
+    target="$HOMEDIR/$rel"
+
+    # Existing target entries can block either this entry or one of its parents.
+    while [[ "$target" != "$HOMEDIR" && "$target" == "$HOMEDIR"/* ]]; do
+      if [[ -e "$target" || -L "$target" ]]; then
+        if [[ ! -d "$target" || -L "$target" || ( "$target" == "$HOMEDIR/$rel" && ( ! -d "$source" || -L "$source" ) ) ]]; then
+          found=0
+          for existing in "${conflicts[@]}"; do
+            if [[ "$existing" == "$target" ]]; then
+              found=1
+              break
+            fi
+          done
+          if [[ "$found" -eq 0 ]]; then
+            conflicts+=("$target")
+          fi
+        fi
+      fi
+      target="$(dirname "$target")"
+    done
+  done < <(find "$package_dir" -mindepth 1 -print0)
+
+  for target in "${conflicts[@]}"; do
+    rm -rf -- "$target"
+  done
+}
+
+function stow_package() {
+  local package="$1"
+  local output status response
+
+  if output=$(eval "$stowcmd -n $package" 2>&1); then
+    eval "$stowcmd $package"
+    return
+  else
+    status=$?
+  fi
+
+  printf '%s\n' "$output"
+  if [[ "$output" != *"WARNING! stowing"* ]]; then
+    return "$status"
+  fi
+
+  if [[ "$OVERWRITE_ALL" -eq 1 ]]; then
+    response="a"
+  else
+    read -r -p "Overwrite conflicts? [y]es, [a]ll, [n]o: " response
+  fi
+
+  case "$response" in
+    [Yy]) ;;
+    [Aa]) OVERWRITE_ALL=1 ;;
+    *)
+      echo "Reload cancelled."
+      CANCEL_RELOAD=1
+      return 0
+      ;;
+  esac
+
+  overwrite_conflicts "$package"
+  eval "$stowcmd $package"
+}
+
 function reload() {
   if [[ -z "$1" ]]; then
     usage
@@ -53,11 +127,12 @@ function reload() {
       if [[ ! -d "$i" ]]; then continue; fi
       i="$(basename "$i")"
       echo -e "Reloading ${BLUE}${i%%/}${NC}"
-      eval "$stowcmd ${i%%/}"
+      stow_package "${i%%/}"
+      if [[ "$CANCEL_RELOAD" -eq 1 ]]; then break; fi
     done
   else
     echo -e "Reloading ${BLUE}$1${NC}"
-    eval "$stowcmd $1"
+    stow_package "$1"
   fi
 }
 
@@ -146,14 +221,14 @@ function list() {
 }
 
 function usage() {
-  echo -e "Invalid operation. Use stowman.sh ${PINK}help${NC} for help."
+  echo -e "Invalid operation. Use stowman ${PINK}help${NC} for help."
 }
 
 function help() {
   cat <<EOF
    _==_ _
  _,(",)|_|
-  \/. \-|   stowman.sh
+  \/. \-|   stowman
 __( :  )|_  Manage your dotfiles easily.
 
 EOF
@@ -180,25 +255,25 @@ EOF
   echo -e "git: \t${GREEN}$gv${NC}\tstow: \t${GREEN}$sv${NC} \t dots: ${ddir}"
   echo
   echo -e "${BLUE}Usage:${NC}"
-  echo -e "stowman.sh ${PINK}init <repo>${NC}  \t${BLUE}Initialize a new config${NC}"
-  echo -e "stowman.sh ${PINK}add <src> <pkg>${NC}  \t${BLUE}Adds a file/folder to a specific package${NC}"
-  echo -e "stowman.sh ${PINK}reload <pkg>|all${NC} \t${BLUE}Applies changes to a specific package or all packages${NC}"
-  echo -e "stowman.sh ${PINK}push${NC} \t\t${BLUE}Push changes to the repository${NC}"
-  echo -e "stowman.sh ${PINK}pull${NC} \t\t${BLUE}Pull changes from the repository${NC}"
+  echo -e "stowman ${PINK}init <repo>${NC}  \t${BLUE}Initialize a new config${NC}"
+  echo -e "stowman ${PINK}add <src> <pkg>${NC}  \t${BLUE}Adds a file/folder to a specific package${NC}"
+  echo -e "stowman ${PINK}reload <pkg>|all${NC} \t${BLUE}Applies changes to a specific package or all packages${NC}"
+  echo -e "stowman ${PINK}push${NC} \t\t${BLUE}Push changes to the repository${NC}"
+  echo -e "stowman ${PINK}pull${NC} \t\t${BLUE}Pull changes from the repository${NC}"
   echo
   echo -e "${BLUE}Initializing a new config${NC}"
-  echo -e "stowman.sh ${PINK}init${NC} git@github.com:user/repo.git"
+  echo -e "stowman ${PINK}init${NC} git@github.com:user/repo.git"
   echo
   echo -e "${BLUE}Adding new files or folders${NC}"
-  echo -e "stowman.sh ${PINK}add${NC} ~/.config/nvim packagename"
-  echo -e "stowman.sh ${PINK}add${NC} . packagename"
+  echo -e "stowman ${PINK}add${NC} ~/.config/nvim packagename"
+  echo -e "stowman ${PINK}add${NC} . packagename"
   echo
   echo -e "${BLUE}Reloading changes${NC}"
-  echo -e "stowman.sh ${PINK}reload${NC} all"
-  echo -e "stowman.sh ${PINK}reload${NC} packagename"
+  echo -e "stowman ${PINK}reload${NC} all"
+  echo -e "stowman ${PINK}reload${NC} packagename"
   echo
   echo -e "${BLUE}List stowed files and folders${NC}"
-  echo -e "stowman.sh ${PINK}list${NC}"
+  echo -e "stowman ${PINK}list${NC}"
   echo
 }
 

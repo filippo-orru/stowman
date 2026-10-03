@@ -10,11 +10,14 @@ __( :  )|_  Manage your dotfiles easily.
 
 ## Installation
 
+Download .sh file
 ```bash
 curl -L https://raw.githubusercontent.com/filippo-orru/stowman/refs/heads/main/stowman.sh > ~/.local/bin/stowman
 chmod +x ~/.local/bin/stowman
+```
 
-# or clone the repo
+Or clone the repo
+```bash
 git clone https://github.com/ad-on-is/stowman ~/.local/tmp/stowman
 chmod +x ~/.local/tmp/stowman/stowman.sh
 ln -s ~/.local/tmp/stowman/stowman.sh ~/.local/bin/stowman.sh
